@@ -30,7 +30,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 for resource in ("punkt", "punkt_tab", "stopwords"):
     try:
         nltk.data.find(f"tokenizers/{resource}")
-    except LookupError:
+    except (LookupError, OSError):
         nltk.download(resource, quiet=True)
 
 from nltk.tokenize import sent_tokenize
@@ -40,10 +40,26 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+# ── CORS Configuration ────────────────────────────────────────────────────────
+# SECURITY FIX: Restrict origins to prevent unauthorized access
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:8082").split(",")
+CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS]  # Strip whitespace
+CORS(app,
+    resources={r"/*": {"origins": CORS_ORIGINS}},
+    allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["Content-Disposition"],
+    max_age=3600,
+    supports_credentials=False,
+)
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+# ── Security Configuration ─────────────────────────────────────────────────────
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "50"))
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB * 1024 * 1024
+UPLOAD_TTL_HOURS = int(os.getenv("UPLOAD_TTL_HOURS", "24"))
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
@@ -220,6 +236,12 @@ def highlight_text():
     file = request.files["file"]
     if not file.filename or not allowed_file(file.filename):
         return jsonify({"error": "Only PDF and DOCX files are supported"}), 400
+    
+    # SECURITY FIX: Check file size before processing
+    if file.content_length and file.content_length > app.config['MAX_CONTENT_LENGTH']:
+        return jsonify({
+            "error": f"File exceeds {MAX_FILE_SIZE_MB}MB limit"
+        }), 413
 
     try:
         input_path = save_upload(file)
@@ -243,7 +265,6 @@ def highlight_text():
 
         # 5. Convert DOCX → PDF if needed, then highlight
         if Path(input_path).suffix.lower() != ".pdf":
-            # For DOCX: create a simple text-only PDF to highlight
             tmp_pdf_path = input_path.replace(Path(input_path).suffix, "_converted.pdf")
             _create_text_pdf(raw_text, tmp_pdf_path)
             work_path = tmp_pdf_path
@@ -254,7 +275,7 @@ def highlight_text():
         highlight_pdf(work_path, top_sentences, output_path)
 
         # 6. Generate MCQs
-        num_q = int(request.form.get("num_questions", 5))
+        num_q = validate_num_questions(request.form)
         mcq_text = generate_mcqs_via_ollama(raw_text, num_q)
 
         # 7. Append MCQs as final page
@@ -272,9 +293,13 @@ def highlight_text():
             }
         )
 
+    except ValueError as e:
+        log.warning("Validation error: %s", e)
+        return jsonify({"error": str(e)}), 400
     except Exception as exc:
         log.exception("Error processing file")
-        return jsonify({"error": str(exc)}), 500
+        # Don't expose full stack trace in production
+        return jsonify({"error": "Processing failed. Please try again."}), 500
 
 
 @app.route("/generate-mcqs", methods=["POST"])
@@ -286,6 +311,12 @@ def generate_mcqs():
     if not file.filename or not allowed_file(file.filename):
         return jsonify({"error": "Only PDF and DOCX files are supported"}), 400
 
+    # SECURITY FIX: Check file size before processing
+    if file.content_length and file.content_length > app.config['MAX_CONTENT_LENGTH']:
+        return jsonify({
+            "error": f"File exceeds {MAX_FILE_SIZE_MB}MB limit"
+        }), 413
+
     try:
         input_path = save_upload(file)
         raw_text = extract_text(input_path)
@@ -293,19 +324,45 @@ def generate_mcqs():
         if not raw_text.strip():
             return jsonify({"error": "Could not extract text from file"}), 422
 
-        num_q = int(request.form.get("num_questions", 5))
+        # SECURITY FIX: Validate num_questions
+        num_q = validate_num_questions(request.form)
         mcq_text = generate_mcqs_via_ollama(raw_text, num_q)
 
         return jsonify({"mcqs": mcq_text})
 
+    except ValueError as e:
+        log.warning("Validation error: %s", e)
+        return jsonify({"error": str(e)}), 400
     except Exception as exc:
         log.exception("Error generating MCQs")
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"error": "MCQ generation failed. Please try again."}), 500
 
 
 @app.route("/uploads/<path:filename>", methods=["GET"])
 def serve_upload(filename):
-    """Serve generated PDFs so the frontend can download them."""
+    """Serve generated PDFs with security validation."""
+    # SECURITY FIX: Prevent path traversal attacks
+    if ".." in filename or filename.startswith("/"):
+        log.warning(f"Path traversal attempt detected: {filename}")
+        return jsonify({"error": "Invalid file path"}), 403
+    
+    # Verify file exists in upload directory
+    try:
+        file_path = (Path(UPLOAD_DIR) / filename).resolve()
+        upload_dir_resolved = Path(UPLOAD_DIR).resolve()
+        
+        # Ensure resolved path is within upload directory
+        if not str(file_path).startswith(str(upload_dir_resolved)):
+            log.warning(f"Access denied for file outside upload dir: {filename}")
+            return jsonify({"error": "Access denied"}), 403
+        
+        if not file_path.exists():
+            return jsonify({"error": "File not found"}), 404
+            
+    except (ValueError, OSError) as e:
+        log.error(f"Path validation error: {e}")
+        return jsonify({"error": "Invalid path"}), 403
+    
     return send_from_directory(UPLOAD_DIR, filename)
 
 
@@ -330,7 +387,31 @@ def _create_text_pdf(text: str, output_path: str) -> None:
     doc.close()
 
 
+# ── Security Headers ──────────────────────────────────────────────────────────
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
+
+# ── Input Validation ───────────────────────────────────────────────────────────
+def validate_num_questions(request_form, default=5, max_val=20):
+    """Extract and validate num_questions parameter."""
+    try:
+        num_q = int(request_form.get("num_questions", default))
+        if not (1 <= num_q <= max_val):
+            raise ValueError(f"num_questions must be between 1 and {max_val}")
+        return num_q
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid num_questions: {str(e)}")
+
+
 # ── Entry ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # SECURITY FIX: Use environment variable for debug mode
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=int(os.getenv("SERVER_PORT", 5000)), debug=debug_mode)

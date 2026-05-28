@@ -3,14 +3,7 @@
     "name": "PDF Highlighter",
     "slug": "pdf-highlighter",
     "version": "1.0.0",
-    "sdkVersion": "50.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#F0F4FF"
-    },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
@@ -23,7 +16,6 @@
       "package": "com.pdfhighlighter.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
