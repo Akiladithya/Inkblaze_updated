@@ -16,7 +16,8 @@
       "package": "com.pdfhighlighter.app"
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "port": 8081
     },
     "plugins": [
       "expo-document-picker"

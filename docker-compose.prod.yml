@@ -1,0 +1,68 @@
+# Production Docker Compose - optimized for performance and security
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pdf-highlighter-backend:latest
+    container_name: pdf-highlighter-backend-prod
+    hostname: backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=gemini-2.5-flash
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://yourdomain.com}
+      - MAX_FILE_SIZE_MB=50
+      - UPLOAD_DIR=/app/uploads
+      - API_KEY=${API_KEY}
+    volumes:
+      - uploads_volume:/app/uploads
+    restart: on-failure:5
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pdf-highlighter-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Nginx reverse proxy (optional, recommended for production)
+  nginx:
+    image: nginx:alpine
+    container_name: pdf-highlighter-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - pdf-highlighter-network
+
+volumes:
+  uploads_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${UPLOADS_PATH:-/data/uploads}
+
+networks:
+  pdf-highlighter-network:
+    driver: bridge

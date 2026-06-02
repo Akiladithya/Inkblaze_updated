@@ -1,115 +1,77 @@
 // src/services/api.js
-
 import axios from 'axios';
+import { Platform } from 'react-native';
 
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
 
-const apiClient = axios.create({
+const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 120000, // 2 min — PDF processing can be slow
-  headers: {
-    'Accept': 'application/json',
-  },
+  timeout: 120000,
+  headers: { Accept: 'application/json' },
 });
 
-// Intercept responses for consistent error handling
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const message =
-      error?.response?.data?.error ||
-      error?.message ||
-      'Something went wrong. Please try again.';
-    return Promise.reject(new Error(message));
-  }
+let _token = null;
+export const setAuthToken = (t) => { _token = t; };
+
+api.interceptors.request.use((config) => {
+  if (_token) config.headers['Authorization'] = `Bearer ${_token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (r) => r,
+  (err) => Promise.reject(new Error(
+    err?.response?.data?.error || err?.message || 'Something went wrong.'
+  ))
 );
 
-/**
- * Upload a file to /highlight-text endpoint.
- * @param {Object} file - File object from expo-document-picker
- * @param {Function} onUploadProgress - Progress callback (optional)
- * @returns {Promise<{ highlighted_text: string, output_pdf_path: string }>}
- */
-export const highlightText = async (file, onUploadProgress) => {
-  const formData = new FormData();
+// ── Auth ──────────────────────────────────────────────────────────────────────
+export const loginUser    = async (email, password)       => (await api.post('/auth/login',    { email, password })).data;
+export const registerUser = async (name, email, password) => (await api.post('/auth/register', { name, email, password })).data;
+export const fetchMe      = async (token) => (await api.get('/auth/me', { headers: { Authorization: `Bearer ${token}` } })).data;
 
-  // React Native FormData needs the file in this exact shape
-  formData.append('file', {
-    uri: file.uri,
-    name: file.name,
-    type: file.mimeType || getMimeType(file.name),
-  });
+// ── History ───────────────────────────────────────────────────────────────────
+export const getHistory       = async ()    => (await api.get('/history')).data;
+export const getHistoryItem   = async (id)  => (await api.get(`/history/${id}`)).data;
+export const deleteHistoryItem = async (id) => (await api.delete(`/history/${id}`)).data;
 
-  const response = await apiClient.post('/highlight-text', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    onUploadProgress: onUploadProgress
-      ? (progressEvent) => {
-          const percent = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
-          );
-          onUploadProgress(percent);
-        }
+// ── Processing ────────────────────────────────────────────────────────────────
+export const highlightText = async (file, onProgress) => {
+  const fd = new FormData();
+  if (Platform.OS === 'web') {
+    fd.append('file', file._webFile || file);
+  } else {
+    fd.append('file', { uri: file.uri, name: file.name, type: file.mimeType || _mime(file.name) });
+  }
+  const r = await api.post('/highlight-text', fd, {
+    onUploadProgress: onProgress
+      ? (e) => onProgress(Math.round((e.loaded * 100) / (e.total || 1)))
       : undefined,
   });
-
-  return response.data;
+  return r.data;
 };
 
-/**
- * Generate MCQs for a file.
- * @param {Object} file - File object from expo-document-picker
- * @param {number} numQuestions - Number of questions to generate
- * @returns {Promise<{ mcqs: string }>}
- */
-export const generateMCQs = async (file, numQuestions = 5) => {
-  const formData = new FormData();
-
-  formData.append('file', {
-    uri: file.uri,
-    name: file.name,
-    type: file.mimeType || getMimeType(file.name),
-  });
-
-  formData.append('num_questions', String(numQuestions));
-
-  const response = await apiClient.post('/generate-mcqs', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-
-  return response.data;
-};
-
-/**
- * Build the full URL to download the highlighted PDF.
- * @param {string} outputPdfPath - Path returned by backend e.g. "uploads/highlighted_with_mcqs.pdf"
- * @returns {string}
- */
-export const getPdfUrl = (outputPdfPath) => {
-  // Strip leading slash if present
-  const cleanPath = outputPdfPath.startsWith('/')
-    ? outputPdfPath.slice(1)
-    : outputPdfPath;
-  return `${BASE_URL}/${cleanPath}`;
-};
-
-// Helper
-function getMimeType(filename) {
-  if (!filename) return 'application/octet-stream';
-  const ext = filename.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'pdf':
-      return 'application/pdf';
-    case 'docx':
-      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    case 'doc':
-      return 'application/msword';
-    default:
-      return 'application/octet-stream';
+export const generateMCQs = async (file, n = 5) => {
+  const fd = new FormData();
+  if (Platform.OS === 'web') {
+    fd.append('file', file._webFile || file);
+  } else {
+    fd.append('file', { uri: file.uri, name: file.name, type: file.mimeType || _mime(file.name) });
   }
+  fd.append('num_questions', String(n));
+  return (await api.post('/generate-mcqs', fd)).data;
+};
+
+export const getPdfUrl = (path) => {
+  const clean = path.startsWith('/') ? path.slice(1) : path;
+  return `${BASE_URL}/${clean}`;
+};
+
+function _mime(fn) {
+  const ext = fn?.split('.').pop()?.toLowerCase();
+  if (ext === 'pdf')  return 'application/pdf';
+  if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  return 'application/octet-stream';
 }
 
 export default { highlightText, generateMCQs, getPdfUrl };

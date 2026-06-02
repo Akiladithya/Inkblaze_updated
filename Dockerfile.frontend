@@ -1,0 +1,22 @@
+# Frontend Dockerfile - React Native with Expo (Web)
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy application code
+COPY . .
+
+# Expose Expo web port
+EXPOSE 8082
+
+# Environment variables
+ENV REACT_NATIVE_PACKAGER_HOSTNAME=localhost
+
+# Start Expo web
+CMD ["npm", "start"]

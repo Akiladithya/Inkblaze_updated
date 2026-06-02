@@ -1,0 +1,61 @@
+services:
+  # Backend - Flask API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pdf-highlighter-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=gemini-2.5-flash
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8081,http://localhost:8082,http://localhost:19006,http://frontend:8082
+      - MAX_FILE_SIZE_MB=50
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - uploads_volume:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pdf-highlighter-network
+
+  # Frontend - React Native Web (optional - can also run locally with npm)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: pdf-highlighter-frontend
+    ports:
+      - "8082:8082"
+    environment:
+      - REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0
+      - EXPO_HOST=0.0.0.0
+      - EXPO_PUBLIC_API_URL=http://backend:5000
+    volumes:
+      - ./src:/app/src
+      - ./app.json:/app/app.json
+      - ./metro.config.js:/app/metro.config.js
+      - ./babel.config.js:/app/babel.config.js
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pdf-highlighter-network
+
+volumes:
+  uploads_volume:
+    driver: local
+
+networks:
+  pdf-highlighter-network:
+    driver: bridge
