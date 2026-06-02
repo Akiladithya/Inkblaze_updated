@@ -108,7 +108,7 @@ curl http://localhost:5000/health
 # Create .env with your Gemini key
 cp .env.example .env
 nano .env
-# Add: GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+# Add: GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 
 # Then start
 docker-compose --env-file .env -f docker-compose.dev.yml up -d
@@ -130,7 +130,7 @@ make dev
 ## 📋 Your API Key
 
 ```
-AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+<YOUR_GEMINI_API_KEY>
 ```
 
 **This key is:**
@@ -225,7 +225,7 @@ curl -X POST http://localhost:5000/generate-mcqs \
 
 ### Required (In .env)
 ```env
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 GEMINI_MODEL=gemini-pro
 ```
 

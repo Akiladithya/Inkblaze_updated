@@ -47,7 +47,7 @@ google-generativeai==0.3.0
 
 **New Environment Variables**:
 ```env
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 GEMINI_MODEL=gemini-pro
 USE_GEMINI=true
 ```
@@ -100,10 +100,10 @@ Return to User
 
 ```bash
 # Set environment variable (Linux/Mac)
-export GEMINI_API_KEY="AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE"
+export GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>"
 
 # Or in Windows PowerShell
-$env:GEMINI_API_KEY="AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE"
+$env:GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>"
 ```
 
 ### 2. Start Docker Containers
@@ -189,7 +189,7 @@ docker-compose logs -f backend
 
 ## 🔐 Key Information
 
-### API Key: `AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE`
+### API Key: `<YOUR_GEMINI_API_KEY>`
 
 **Security Note**: This key should be:
 1. Stored in environment variables only
@@ -227,7 +227,7 @@ docker-compose logs -f backend
 ```env
 FLASK_ENV=development
 USE_GEMINI=true
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 CORS_ORIGINS=http://localhost:8082
 ```
 

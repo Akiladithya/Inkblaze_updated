@@ -120,7 +120,7 @@ validate-docker-deployment.bat               (Windows)
 
 ```env
 # Gemini Settings
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 GEMINI_MODEL=gemini-pro
 USE_GEMINI=true
 

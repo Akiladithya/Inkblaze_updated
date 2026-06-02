@@ -21,7 +21,7 @@ All required changes for Gemini API integration have been **completed and verifi
 
 **Your API Key** (Already Added to .env.dev):
 ```
-AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+<YOUR_GEMINI_API_KEY>
 ```
 
 ---
@@ -134,7 +134,7 @@ environment:
 cat .env
 
 # Should show:
-# GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+# GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 # GEMINI_MODEL=gemini-pro
 # ... other variables
 ```
@@ -276,7 +276,7 @@ kubectl apply -f k8s/deployment.yaml
 
 ### Option D: Local Flask Development
 ```bash
-export GEMINI_API_KEY="AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE"
+export GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>"
 cd backend
 python -m flask run --host=0.0.0.0 --port=5000
 ```
@@ -325,7 +325,7 @@ docker-compose --env-file .env -f docker-compose.dev.yml up -d
 # Check Generative Language API is enabled: https://console.cloud.google.com/
 
 # Re-add the key to .env and restart
-echo "GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE" >> .env
+echo "GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>" >> .env
 docker-compose restart backend
 ```
 
