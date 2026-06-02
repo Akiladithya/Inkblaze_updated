@@ -11,7 +11,7 @@
 ```bash
 # 1. Create .env file with your Gemini API key
 cp .env.example .env
-nano .env   # Add: GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+nano .env   # Add: GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 
 # 2. Start Docker
 docker-compose --env-file .env -f docker-compose.dev.yml up -d
@@ -78,7 +78,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 ### Minimum Setup (.env file)
 ```env
 # Required
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 GEMINI_MODEL=gemini-pro
 
 # Optional (defaults provided)
@@ -284,7 +284,7 @@ print(model.generate_content('Say hello'))
 
 **Your Gemini API Key:**
 ```
-AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+<YOUR_GEMINI_API_KEY>
 ```
 
 ⚠️ **NEVER commit this to Git!**  

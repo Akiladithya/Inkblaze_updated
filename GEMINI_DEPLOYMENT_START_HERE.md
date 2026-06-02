@@ -11,7 +11,7 @@
 ```bash
 # 1. Ensure .env file has your Gemini API key
 cat .env
-# Should show: GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+# Should show: GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 
 # 2. Start the application
 docker-compose --env-file .env -f docker-compose.dev.yml up -d
@@ -54,7 +54,7 @@ curl http://localhost:5000/health
 Get your free key from: https://makersuite.google.com/app/apikey
 
 Key provided in this setup:
-AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+<YOUR_GEMINI_API_KEY>
 ```
 
 ### Environment Files
@@ -69,7 +69,7 @@ AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
 cp .env.example .env
 
 # Add your Gemini API key
-echo "GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE" >> .env
+echo "GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>" >> .env
 
 # Or edit manually
 nano .env

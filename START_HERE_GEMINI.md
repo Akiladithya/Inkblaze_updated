@@ -21,7 +21,7 @@ curl http://localhost:5000/health
 http://localhost:8082
 ```
 
-**Your API Key**: `AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE`
+**Your API Key**: `<YOUR_GEMINI_API_KEY>`
 
 ---
 
@@ -142,7 +142,7 @@ GEMINI_API_KEY=${GEMINI_API_KEY}  # From .env file substitution
 ### Step 1: Verify .env (Already done)
 ```bash
 cat .env
-# Should show: GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+# Should show: GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 ```
 
 ### Step 2: Start Docker
@@ -184,7 +184,7 @@ Open: http://localhost:8082
 
 ### Your Gemini API Key
 ```
-AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+<YOUR_GEMINI_API_KEY>
 ```
 ✅ Already added to `.env.dev`  
 ✅ Valid for immediate use  
@@ -261,7 +261,7 @@ MCQs Returned
 ### Minimal .env Setup
 ```env
 # Required (Already added)
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 GEMINI_MODEL=gemini-pro
 
 # Optional (Defaults work fine)
@@ -305,7 +305,7 @@ docker-compose --env-file .env -f docker-compose.dev.yml restart backend
 # Test the key works
 python << 'EOF'
 import google.generativeai as genai
-genai.configure(api_key="AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE")
+genai.configure(api_key="<YOUR_GEMINI_API_KEY>")
 model = genai.GenerativeModel("gemini-pro")
 print(model.generate_content("Hello"))
 EOF

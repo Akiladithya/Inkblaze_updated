@@ -59,10 +59,10 @@ curl -X POST http://localhost:5000/highlight-text \
 ### Gemini API Key
 ```bash
 # Set in environment
-export GEMINI_API_KEY="AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE"
+export GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>"
 
 # Or in .env file
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 
 # Docker Compose picks it up automatically
 ```
@@ -231,7 +231,7 @@ Or manual checks:
 
 ## 🚨 Important Notes
 
-1. **API Key**: `AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE`
+1. **API Key**: `<YOUR_GEMINI_API_KEY>`
    - Free tier: 100 requests/minute
    - For production: Create your own key
 

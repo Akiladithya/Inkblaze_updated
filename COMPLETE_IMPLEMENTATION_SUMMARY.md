@@ -80,7 +80,7 @@ def generate_mcqs(text, num_questions=5):
 
 **New Environment Variables**:
 ```env
-GEMINI_API_KEY=AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 GEMINI_MODEL=gemini-pro
 USE_GEMINI=true
 ```
@@ -335,14 +335,14 @@ docker-compose exec backend env | grep GEMINI  # Check env
 
 ### Gemini API Key
 ```
-AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE
+<YOUR_GEMINI_API_KEY>
 ```
 - Development/Testing: Use as-is
 - Production: Create your own key at https://aistudio.google.com
 
 ### Environment Variable
 ```bash
-export GEMINI_API_KEY="AIzaSyBMVMpvkGxZePGK8ppjfUjmBRb8Ds62WeE"
+export GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>"
 ```
 
 ### Docker Configuration
