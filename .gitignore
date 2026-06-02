@@ -1,5 +1,48 @@
-/node_modules
-/.env
-/.expo
-/.vscode
-/.qodo
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+
+# All .env files everywhere — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Backend secrets
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Editor
+.vscode/
+.idea/
+.qodo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+web-build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Uploads (generated files)
+uploads/
+backend/uploads/
+mnt/
+
+# Database (contains user data)
+backend/*.db
+*.db

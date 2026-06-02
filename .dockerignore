@@ -1,0 +1,26 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.env.local
+.DS_Store
+dist
+build
+coverage
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.vscode
+.idea
+*.log
+uploads
+backend/uploads
+mnt
+.expo
+.qodo
+# Docs
+*.md
+k8s
+.github

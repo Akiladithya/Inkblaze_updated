@@ -1,0 +1,56 @@
+# Deployment Workflow - Manual Trigger
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Pull Docker images
+        env:
+          REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo $REGISTRY_PASSWORD | docker login -u $REGISTRY_USERNAME --password-stdin $REGISTRY
+          docker-compose pull
+
+      - name: Deploy with Docker Compose
+        env:
+          DOCKER_HOST: ${{ secrets.DOCKER_HOST }}
+          API_KEY: ${{ secrets.API_KEY }}
+          CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+        run: |
+          docker-compose -f docker-compose.prod.yml up -d
+          docker-compose ps
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -f http://localhost:5000/health || exit 1
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ Deployment successful to ${{ github.event.inputs.environment }}"
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed to ${{ github.event.inputs.environment }}"

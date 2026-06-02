@@ -1,36 +1,19 @@
 // src/components/UploadCard.js
-
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Animated,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { colors, typography, spacing, radius, shadows } from '../styles/theme';
 
 const UploadCard = ({ onFileSelected, selectedFile }) => {
-  const [pressing, setPressing] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const ND = Platform.OS !== 'web';
 
   const handlePress = async () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, { toValue: 0.99, duration: 80, useNativeDriver: ND }),
+      Animated.timing(scaleAnim, { toValue: 1,    duration: 80, useNativeDriver: ND }),
+    ]).start();
     try {
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.97,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
       const result = await DocumentPicker.getDocumentAsync({
         type: [
           'application/pdf',
@@ -40,19 +23,17 @@ const UploadCard = ({ onFileSelected, selectedFile }) => {
         copyToCacheDirectory: true,
         multiple: false,
       });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        onFileSelected(result.assets[0]);
+      if (!result.canceled && result.assets?.length > 0) {
+        const asset = result.assets[0];
+        if (Platform.OS === 'web' && asset.file) asset._webFile = asset.file;
+        onFileSelected(asset);
       }
     } catch (err) {
       console.warn('Document picker error:', err);
     }
   };
 
-  const fileExtension = selectedFile
-    ? selectedFile.name?.split('.').pop()?.toUpperCase()
-    : null;
-
+  const ext = selectedFile?.name?.split('.').pop()?.toUpperCase();
   const fileSize = selectedFile?.size
     ? selectedFile.size < 1024 * 1024
       ? `${(selectedFile.size / 1024).toFixed(1)} KB`
@@ -61,43 +42,35 @@ const UploadCard = ({ onFileSelected, selectedFile }) => {
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={handlePress}
-        style={[styles.card, selectedFile && styles.cardFilled]}
-      >
-        {/* Dashed border overlay */}
-        <View style={styles.dashedBorder} />
+      <TouchableOpacity activeOpacity={0.85} onPress={handlePress}
+        style={[styles.card, selectedFile && styles.cardFilled]}>
 
         {selectedFile ? (
-          <View style={styles.fileInfo}>
-            <View style={styles.fileIconBadge}>
-              <Text style={styles.fileIconText}>{fileExtension}</Text>
+          <View style={styles.fileRow}>
+            <View style={styles.extBadge}>
+              <Text style={styles.extText}>{ext}</Text>
             </View>
             <View style={styles.fileMeta}>
-              <Text style={styles.fileName} numberOfLines={2}>
-                {selectedFile.name}
-              </Text>
+              <Text style={styles.fileName} numberOfLines={1}>{selectedFile.name}</Text>
               {fileSize && <Text style={styles.fileSize}>{fileSize}</Text>}
             </View>
-            <View style={styles.changeChip}>
-              <Text style={styles.changeChipText}>Change</Text>
-            </View>
+            <TouchableOpacity style={styles.changeBtn} onPress={handlePress}>
+              <Text style={styles.changeBtnText}>Replace</Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.uploadIconCircle}>
-              <Text style={styles.uploadArrow}>↑</Text>
+          <View style={styles.empty}>
+            <View style={styles.uploadMark}>
+              <Text style={styles.uploadMarkText}>+</Text>
             </View>
-            <Text style={styles.uploadTitle}>Drop your document here</Text>
-            <Text style={styles.uploadSubtitle}>PDF or DOCX supported</Text>
-            <View style={styles.formatPills}>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>PDF</Text>
-              </View>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>DOCX</Text>
-              </View>
+            <Text style={styles.emptyTitle}>Select or drop a document</Text>
+            <Text style={styles.emptySubtitle}>PDF or DOCX · up to 50 MB</Text>
+            <View style={styles.pills}>
+              {['PDF', 'DOCX'].map(f => (
+                <View key={f} style={styles.pill}>
+                  <Text style={styles.pillText}>{f}</Text>
+                </View>
+              ))}
             </View>
           </View>
         )}
@@ -109,129 +82,76 @@ const UploadCard = ({ onFileSelected, selectedFile }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.borderMid,
     padding: spacing.xl,
-    minHeight: 200,
+    minHeight: 180,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    ...shadows.md,
+    ...(Platform.OS === 'web' ? shadows.sm : shadows.sm),
   },
   cardFilled: {
     borderStyle: 'solid',
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-    padding: spacing.lg,
+    borderColor: colors.primary,
     minHeight: 'auto',
-  },
-  dashedBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: radius.lg,
+    padding: spacing.md,
+    backgroundColor: colors.primarySoft,
   },
 
-  // Empty state
-  emptyState: {
-    alignItems: 'center',
-    gap: spacing.sm,
+  empty: { alignItems: 'center', gap: spacing.sm },
+  uploadMark: {
+    width: 44, height: 44, borderRadius: radius.sm,
+    borderWidth: 1, borderColor: colors.borderMid,
+    backgroundColor: colors.surface,
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: spacing.xs,
   },
-  uploadIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+  uploadMarkText: {
+    fontSize: 24, color: colors.textMuted,
+    fontWeight: typography.regular, lineHeight: 28,
   },
-  uploadArrow: {
-    fontSize: 28,
-    color: colors.textInverse,
-    fontWeight: typography.bold,
-  },
-  uploadTitle: {
-    fontSize: typography.md,
-    fontWeight: typography.semibold,
+  emptyTitle: {
+    fontSize: typography.base, fontWeight: typography.medium,
     color: colors.textPrimary,
-    textAlign: 'center',
   },
-  uploadSubtitle: {
-    fontSize: typography.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  formatPills: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
+  emptySubtitle: { fontSize: typography.sm, color: colors.textMuted },
+  pills: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   pill: {
-    backgroundColor: colors.surfaceAlt,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingHorizontal: spacing.sm, paddingVertical: 3,
+    borderRadius: radius.sm, borderWidth: 1,
+    borderColor: colors.border, backgroundColor: colors.backgroundAlt,
   },
   pillText: {
-    fontSize: typography.xs,
-    fontWeight: typography.semibold,
-    color: colors.textSecondary,
-    letterSpacing: 1,
+    fontSize: typography.xs, fontWeight: typography.semibold,
+    color: colors.textMuted, letterSpacing: 1,
   },
 
-  // File info (filled state)
-  fileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    gap: spacing.md,
-  },
-  fileIconBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.sm,
+  fileRow: { flexDirection: 'row', alignItems: 'center', width: '100%', gap: spacing.md },
+  extBadge: {
+    width: 42, height: 42, borderRadius: radius.sm,
     backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
-  fileIconText: {
-    fontSize: typography.xs,
-    fontWeight: typography.extrabold,
-    color: colors.textInverse,
-    letterSpacing: 0.5,
+  extText: {
+    fontSize: typography.xs, fontWeight: typography.extrabold,
+    color: colors.textInverse, letterSpacing: 0.5,
   },
-  fileMeta: {
-    flex: 1,
-  },
+  fileMeta: { flex: 1 },
   fileName: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontSize: typography.base, fontWeight: typography.semibold,
     color: colors.textPrimary,
-    lineHeight: typography.base * typography.normal,
   },
-  fileSize: {
-    fontSize: typography.sm,
-    color: colors.textMuted,
-    marginTop: 2,
+  fileSize: { fontSize: typography.xs, color: colors.textMuted, marginTop: 2 },
+  changeBtn: {
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+    borderRadius: radius.sm, borderWidth: 1,
+    borderColor: colors.borderMid, backgroundColor: colors.surface,
   },
-  changeChip: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    flexShrink: 0,
-  },
-  changeChipText: {
-    fontSize: typography.xs,
-    fontWeight: typography.semibold,
-    color: colors.textInverse,
+  changeBtnText: {
+    fontSize: typography.xs, fontWeight: typography.medium,
+    color: colors.textSecondary,
   },
 });
 

@@ -102,12 +102,9 @@ const DownloadButton = ({ outputPdfPath }) => {
     switch (status) {
       case 'downloading':
         return progress > 0 ? `Downloading… ${progress}%` : 'Downloading…';
-      case 'done':
-        return '✓ Saved to device';
-      case 'error':
-        return 'Download failed — retry';
-      default:
-        return '↓  Download PDF';
+      case 'done':    return 'Saved to device';
+      case 'error':   return 'Download failed — tap to retry';
+      default:        return 'Download PDF';
     }
   };
 
@@ -143,21 +140,17 @@ const DownloadButton = ({ outputPdfPath }) => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.ink,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     overflow: 'hidden',
-    minHeight: 54,
+    minHeight: 50,
     justifyContent: 'center',
-    ...shadows.md,
+    ...(Platform.OS === 'web' ? shadows.md : shadows.md),
   },
-  buttonDone: {
-    backgroundColor: colors.success,
-  },
-  buttonError: {
-    backgroundColor: colors.error,
-  },
+  buttonDone:  { backgroundColor: colors.success },
+  buttonError: { backgroundColor: colors.error },
   inner: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -166,15 +159,10 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   label: {
-    fontSize: typography.base,
-    fontWeight: typography.bold,
-    color: colors.textInverse,
-    textAlign: 'center',
-    letterSpacing: 0.3,
+    fontSize: typography.base, fontWeight: typography.semibold,
+    color: colors.textInverse, textAlign: 'center', letterSpacing: 0.2,
   },
-  labelDone: {
-    color: colors.textInverse,
-  },
+  labelDone: { color: colors.textInverse },
   progressFill: {
     position: 'absolute',
     left: 0,

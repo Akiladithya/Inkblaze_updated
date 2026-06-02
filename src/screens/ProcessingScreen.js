@@ -9,13 +9,16 @@ import {
   Animated,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import LoadingView from '../components/LoadingView';
 import { highlightText } from '../services/api';
+import { getFile, clearFile } from '../utils/fileStore';
 import { colors, typography, spacing, radius } from '../styles/theme';
 
 const ProcessingScreen = ({ route, navigation }) => {
-  const { file } = route.params;
+  const { fileName } = route.params;
+  const file = getFile();
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -24,7 +27,7 @@ const ProcessingScreen = ({ route, navigation }) => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
 
     processFile();
@@ -36,10 +39,11 @@ const ProcessingScreen = ({ route, navigation }) => {
       const result = await highlightText(file, setUploadProgress);
 
       if (result?.highlighted_text && result?.output_pdf_path) {
+        clearFile();
         navigation.replace('Result', {
           highlightedText: result.highlighted_text,
           outputPdfPath: result.output_pdf_path,
-          fileName: file.name,
+          fileName: fileName,
         });
       } else {
         throw new Error('Invalid response from server. Missing expected fields.');
@@ -65,8 +69,7 @@ const ProcessingScreen = ({ route, navigation }) => {
 
       {error ? (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorEmoji}>❌</Text>
-          <Text style={styles.errorTitle}>Processing Failed</Text>
+          <Text style={styles.errorTitle}>Something went wrong</Text>
           <Text style={styles.errorBody}>{error}</Text>
           <View style={styles.errorActions}>
             <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}>
@@ -92,22 +95,13 @@ const styles = StyleSheet.create({
 
   // Error state
   errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  errorEmoji: {
-    fontSize: 56,
-    marginBottom: spacing.lg,
+    flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl,
   },
   errorTitle: {
-    fontSize: typography.xl,
-    fontWeight: typography.bold,
+    fontSize: typography.xl, fontWeight: typography.bold,
     color: colors.textPrimary,
-    fontFamily: 'Georgia',
-    marginBottom: spacing.sm,
-    textAlign: 'center',
+    ...(Platform.OS === 'web' ? { fontFamily: "'Cormorant Garamond', Georgia, serif" } : { fontFamily: 'Georgia' }),
+    marginBottom: spacing.sm, textAlign: 'center',
   },
   errorBody: {
     fontSize: typography.sm,

@@ -65,17 +65,10 @@ if errorlevel 1 (
     echo You may need to run: python -m nltk.downloader punkt punkt_tab stopwords
 )
 
-REM Check Ollama
+REM Check Gemini API key
 echo.
-echo Checking for Ollama service...
-for /f %%i in ('powershell -Command "try { (curl.exe -s -m 5 http://localhost:11434/api/tags).StatusCode } catch { write-host ''connection failed'' }"') do (
-    if "%%i"=="200" (
-        echo ✓ Ollama is running
-    ) else (
-        echo ⚠  Ollama not detected at localhost:11434
-        echo   Install from https://ollama.ai and run: ollama pull mistral
-    )
-)
+echo Checking Gemini API key...
+python -c "import os; from dotenv import load_dotenv; load_dotenv('.env'); key=os.getenv('GEMINI_API_KEY'); print('  Gemini API key: SET') if key else print('  WARNING: GEMINI_API_KEY not set in .env')"
 
 REM Start Flask server
 echo.
